@@ -11,6 +11,16 @@ var heading = document.querySelector("#heading");
 var colorDisplay = document.querySelector("#color-display");
 var resetButton = document.querySelector("#reset-button");
 
+
+squares.forEach(function(square, i) {
+  square.addEventListener("mouseover", function() {
+    if (square.style.backgroundColor === "rgb(23, 23, 23") {
+      var channels = darkenColor(getChannels(colors[i]));
+      square.style.boxShadow = "0 4px rgb(" + channels[0] + ", " + channels[1] + ", " + channels[2] + ") !important";
+    }
+  });
+});
+
 var modes = {
   "easy": {
     difficultyLevel: 3
@@ -55,9 +65,12 @@ soundBtn.addEventListener("click", function() {
 });
 
 var resetColors = function() {
+  var channels;
   squares.forEach((v, i, a) => {
     if (colors[i]) {
+      channels = darkenColor(getChannels(colors[i]));
       v.style.backgroundColor = colors[i];
+      v.style.boxShadow = "0px 6px rgb(" + channels[0] + ", " + channels[1] + ", " + channels[2] + ")";
       v.style.display = "block";
     }
     else {
@@ -66,10 +79,7 @@ var resetColors = function() {
   });
 };
 
-
-var difficultyLevel = function(level) {
-  colors = generateRandomColors(level);
-  pickedColor = pickRandomColor();
+var showSelectedMode = () => {
   numberBaseBtns.forEach(btn => {
     if (btn.textContent.toLowerCase() === 'hex' && btn.classList.contains("selected")) {
       colorDisplay.textContent = toHex();
@@ -78,6 +88,13 @@ var difficultyLevel = function(level) {
       colorDisplay.textContent = pickedColor;
     }
   });
+};
+
+
+var difficultyLevel = function(level) {
+  colors = generateRandomColors(level);
+  pickedColor = pickRandomColor();
+  showSelectedMode();
   heading.style.backgroundColor = 'steelblue';
   resetButton.textContent = "New Colors";
   resetColors();
@@ -91,16 +108,14 @@ modeBtns.forEach(function(btn) {
     });
     this.classList.add("selected");
     if (modes[this.textContent.toLowerCase()]) {
-      console.log(this.textContent);
       difficultyLevel(modes[this.textContent.toLowerCase()].difficultyLevel);
     };
   });
 });
 
-var toHex = () => {
+var getChannels = (rgbColor) => {
   var channels;
-  var hexCode = "#";
-  channels = pickedColor.split(",");
+  channels = rgbColor.split(",");
   channels.forEach((channel, i) => {
     if (i === 0) {
       channels[i] = parseInt(channel.split("(")[1]);
@@ -108,7 +123,21 @@ var toHex = () => {
     else {
       channels[i] = parseInt(channel);
     }
-  })
+  });
+  return channels;
+};
+
+var darkenColor = (rgbChannels) => {
+  rgbChannels.forEach((channel, i) => {
+    rgbChannels[i] = (channel - 30) > 0 ? (channel - 30) : 0;
+  });
+  return rgbChannels;
+};
+
+var toHex = () => {
+  var channels;
+  var hexCode = "#";
+  channels = getChannels(pickedColor);
   channels.forEach(c => {
     c = c.toString(16);
     hexCode += c.length === 1 ? "0" + c : c;
@@ -117,12 +146,12 @@ var toHex = () => {
 };
 
 
-
-
 var setBackgroundColors = (color) => {
+  var channels;
   squares.forEach((v, i, a) => {
     v.style.backgroundColor = color;
-    v.style.border = "2px solid #fff";
+    channels = darkenColor(getChannels(color));
+    v.style.boxShadow = "0px 6px rgb(" + channels[0] + ", " + channels[1] + ", " + channels[2] + ")";
   });
 }
 
@@ -135,9 +164,6 @@ var displayMessage = (txt) => {
 var genRandomNumber = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
 };
-
-
-
 
 
 var generateRandomColors = (numColors) => {
@@ -173,35 +199,42 @@ var pickedColor = pickRandomColor();
 
 colorDisplay.textContent = pickedColor;
 
+var correctGuess = (el, clickedColor) => {
+  setBackgroundColors(pickedColor);
+  displayMessage("You got it!");
+  heading.style.backgroundColor = clickedColor;
+  resetButton.textContent = "Play Again?";
+  if (soundBtn.classList.contains("selected")) {
+    correctAudio.currentTime = 0;
+    correctAudio.play();
+  }
+  if (speechBtn.classList.contains("selected")) {
+    speak(praises[genRandomNumber(0, praises.length - 1)]);
+  }
+};
+
+var incorrectGuess = (el) => {
+  displayMessage("Sorry, try again!");
+  el.style.backgroundColor = "#232323";
+  el.style.borderColor = "#232323";
+  el.style.boxShadow = "none";
+  if (soundBtn.classList.contains("selected")) {
+    incorrectAudio.currentTime = 0;
+    incorrectAudio.play();
+  }
+  if (speechBtn.classList.contains("selected")) {
+    speak(insults[genRandomNumber(0, insults.length - 1)]);
+  }
+};
 
 var setUpEventHandlers = (el) => {
   el.addEventListener("click", function() {
     var clickedColor = this.style.backgroundColor;
     if (clickedColor == pickedColor) {
-      setBackgroundColors(pickedColor);
-      displayMessage("You got it!");
-      heading.style.backgroundColor = clickedColor;
-      resetButton.textContent = "Play Again?";
-      if (soundBtn.classList.contains("selected")) {
-        correctAudio.currentTime = 0;
-        correctAudio.play();
-      }
-      if (speechBtn.classList.contains("selected")) {
-        speak(praises[genRandomNumber(0, praises.length - 1)]);
-      }
-
+      correctGuess(el, clickedColor);
     }
     else {
-      displayMessage("Sorry, try again!");
-      this.style.backgroundColor = "#232323";
-      this.style.borderColor = "#232323";
-      if (soundBtn.classList.contains("selected")) {
-        incorrectAudio.currentTime = 0;
-        incorrectAudio.play();
-      }
-      if (speechBtn.classList.contains("selected")) {
-        speak(insults[genRandomNumber(0, insults.length - 1)]);
-      }
+      incorrectGuess(el);
     }
   });
 };
@@ -215,7 +248,7 @@ squares.forEach((v, i, a) => {
 resetButton.addEventListener("click", function() {
   colors = generateRandomColors(colors.length);
   pickedColor = pickRandomColor();
-  colorDisplay.textContent = pickedColor;
+  showSelectedMode();
   heading.style.backgroundColor = 'steelblue';
   resetButton.textContent = "New Colors";
   displayMessage("Let's Play A Game!");
@@ -224,16 +257,10 @@ resetButton.addEventListener("click", function() {
 
 numberBaseBtns.forEach(function(btn) {
   btn.addEventListener("click", function() {
-    var channels;
     numberBaseBtns.forEach(function(b, i) {
       b.classList.remove("selected");
     });
     this.classList.add("selected");
-    if (this.textContent.toLowerCase() == 'hex') {
-      colorDisplay.textContent = toHex();
-    }
-    else {
-      colorDisplay.textContent = pickedColor;
-    };
+    showSelectedMode();
   });
 });
