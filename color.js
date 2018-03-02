@@ -11,16 +11,6 @@ var heading = document.querySelector("#heading");
 var colorDisplay = document.querySelector("#color-display");
 var resetButton = document.querySelector("#reset-button");
 
-
-squares.forEach(function(square, i) {
-  square.addEventListener("mouseover", function() {
-    if (square.style.backgroundColor === "rgb(23, 23, 23") {
-      var channels = darkenColor(getChannels(colors[i]));
-      square.style.boxShadow = "0 4px rgb(" + channels[0] + ", " + channels[1] + ", " + channels[2] + ") !important";
-    }
-  });
-});
-
 var modes = {
   "easy": {
     difficultyLevel: 3
@@ -39,20 +29,23 @@ var modes = {
 var praises = [
   "Yes!",
   "Excellent!",
-  "Nice!"
+  "Nice!",
+  "Good Eye!",
+  "Correct"
 ];
 
 var insults = [
   "Nope!",
   "Nada!",
-  "Really!"
+  "Really!",
+  "Incorrect!",
+  "Sorry!"
 ];
 
 var speak = function(message) {
   var msg = new SpeechSynthesisUtterance(message);
   var voices = window.speechSynthesis.getVoices();
-  var randomVoice = genRandomNumber(0, voices.length - 1);
-  msg.voice = voices[randomVoice];
+  msg.voice = voices[17];
   window.speechSynthesis.speak(msg);
 };
 
@@ -84,7 +77,10 @@ var showSelectedMode = () => {
     if (btn.textContent.toLowerCase() === 'hex' && btn.classList.contains("selected")) {
       colorDisplay.textContent = toHex();
     }
-    else {
+    if (btn.textContent.toLowerCase() === 'hsl' && btn.classList.contains("selected")) {
+      colorDisplay.textContent = toHsl().str;
+    }
+    if (btn.textContent.toLowerCase() === 'rgb' && btn.classList.contains("selected")) {
       colorDisplay.textContent = pickedColor;
     }
   });
@@ -145,6 +141,55 @@ var toHex = () => {
   return hexCode;
 };
 
+// https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
+var toHsl = () => {
+  var channels;
+  var r, g, b;
+  channels = getChannels(pickedColor);
+  
+  r = channels[0];
+  g = channels[1];
+  b = channels[2];
+
+  r /= 255.0;
+  g /= 255.0;
+  b /= 255.0;
+  var max = Math.max(r, g, b);
+  var min = Math.min(r, g, b);
+  var h, s, l = (max + min) / 2.0;
+
+  if(max == min)
+  {
+      h = s = 0; 
+  }
+  else
+  {
+    var d = max - min;
+    s = (l > 0.5 ? d / (2.0 - max - min) : d / (max + min));
+
+    if(max == r && g >= b)
+    {
+        h = 1.0472 * (g - b) / d ;
+    }
+    else if(max == r && g < b)
+    {
+        h = 1.0472 * (g - b) / d + 6.2832;
+    }
+    else if(max == g)
+    {
+        h = 1.0472 * (b - r) / d + 2.0944;
+    }
+    else if(max == b)
+    {
+        h = 1.0472 * (r - g) / d + 4.1888;
+    }
+  }
+  return {
+      str: 'hsl(' + parseInt(h / 6.2832 * 360.0 + 0.5) + ', ' + parseInt(s * 100.0 + 0.5) + '%, ' + parseInt(l * 100.0 + 0.5) + '%)',
+      obj: { h: parseInt(h / 6.2832 * 360.0 + 0.5), s: parseInt(s * 100.0 + 0.5), l: parseInt(l * 100.0 + 0.5) }
+  };
+};
+
 
 var setBackgroundColors = (color) => {
   var channels;
@@ -200,6 +245,11 @@ var pickedColor = pickRandomColor();
 colorDisplay.textContent = pickedColor;
 
 var correctGuess = (el, clickedColor) => {
+  squares.forEach(function(s) {
+    if (s.style.boxShadow = "none") {
+      s.style.top = "-3px";
+    }
+  });
   setBackgroundColors(pickedColor);
   displayMessage("You got it!");
   heading.style.backgroundColor = clickedColor;
@@ -215,8 +265,7 @@ var correctGuess = (el, clickedColor) => {
 
 var incorrectGuess = (el) => {
   displayMessage("Sorry, try again!");
-  el.style.backgroundColor = "#232323";
-  el.style.borderColor = "#232323";
+  el.style.top = "3px";
   el.style.boxShadow = "none";
   if (soundBtn.classList.contains("selected")) {
     incorrectAudio.currentTime = 0;
