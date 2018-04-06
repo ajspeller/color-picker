@@ -6,4 +6,4 @@ You are also presented with 3, 6, 9 or 12 colors and have to select the correct 
 
 You can toggle the modes and sounds as well.
 
-You can view the game at the following link.
+You can view the game at the following link, https://ajspeller.github.io/color-picker/
